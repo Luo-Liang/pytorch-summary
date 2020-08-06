@@ -46,11 +46,13 @@ def summary_string(model, input_size, batch_size=-1, device=torch.device('cuda:0
             if hasattr(module, "bias") and hasattr(module.bias, "size"):
                 params += torch.prod(torch.LongTensor(list(module.bias.size())))
             summary[m_key]["nb_params"] = params
+            summary[m_key]['backward_tick'] = 0
             pass
 
         def bwHook(module, input, output):
+            current = datetime.datetime.now().timestamp() - summary['last_backward_tick']
             m_key = moduleKeyLookup[module] #"%s-%i" % (class_name, module_idx + 1)
-            summary[m_key]['backward_tick'] = datetime.datetime.now().timestamp() - summary['last_backward_tick']
+            summary[m_key]['backward_tick'] += current
             summary['last_backward_tick'] = datetime.datetime.now().timestamp()
             #print("activating")
             pass
@@ -83,8 +85,10 @@ def summary_string(model, input_size, batch_size=-1, device=torch.device('cuda:0
     output = model(*x)
     #make a few backward pass too
     loss = (1-output.mean())
-    summary['last_backward_tick'] = datetime.datetime.now().timestamp()
-    loss.backward()
+    for _ in range(1000):
+        summary['last_backward_tick'] = datetime.datetime.now().timestamp()
+        loss.backward(retain_graph=True)
+        pass
     #print(hooks)
     # remove these hooks
     for h in hooks:
