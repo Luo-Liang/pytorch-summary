@@ -88,7 +88,7 @@ def summary_string(model, input_size, batch_size=-1, device=torch.device('cuda:0
         backward_ts.append(summary[key]['backward_tick'])
         pass
         
-    sum_ts = sum(backward_ts)
+    
     summary_str = ''
     BUCKET_CAP = 25 * 1024 * 1024
     BUCKET_CAP_INIT = 1024 * 1024
@@ -112,5 +112,6 @@ def summary_string(model, input_size, batch_size=-1, device=torch.device('cuda:0
         trainable_params.append(bucket_size)
         pass
     #print(trainable_params)
+    sum_ts = sum(backward_ts)
     backward_ts = [x / sum_ts for x in backward_ts]
     return summary_str, list(reversed(trainable_params)), list(reversed(backward_ts))
