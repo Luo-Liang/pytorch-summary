@@ -21,27 +21,29 @@ def summary_string(model, input_size, batch_size=-1, device=torch.device('cuda:0
 
     summary_str = ''
     monitored = []
-    for name, param in model.named_parameters():
+    for param in model.parameters():
         if param.requires_grad:
             monitored.append(param)
             pass
         pass
 
-    
+    iterator = 0
     def register_hook(tensor):
-        def bwHook(t, input, output):
+        t = tensor
+        def bwHook(grad):
             current = datetime.datetime.now().timestamp() - summary['last_backward_tick']
-            summary[t] = {}
+            #t = grad
             if t not in summary:
-                summary[t] = 0
+                summary[t] = {}
+                summary[t]['backward_tick'] = 0
                 pass
             summary[t]['backward_tick'] += current
-            summary[t]['size'] = torch.prod(torch.LongTensor(list(t.size())))
+            summary[t]['size'] = torch.prod(torch.LongTensor(list(t.size()))).item() * 4
             summary['last_backward_tick'] = datetime.datetime.now().timestamp()
             #print("activating")
-            pass
+            return grad
 
-        hooks.append(tensor.register_backward_hook(bwHook))
+        hooks.append(tensor.register_hook(bwHook))
         pass
 
     # multiple inputs to the network
@@ -58,8 +60,8 @@ def summary_string(model, input_size, batch_size=-1, device=torch.device('cuda:0
 
     # register hook
     #model.apply(register_hook)
-    for t in monitored:
-        register_hook(t)
+    for p in monitored:
+        register_hook(p)
         pass
 
     # make a forward pass
@@ -80,8 +82,9 @@ def summary_string(model, input_size, batch_size=-1, device=torch.device('cuda:0
     #reverse
     trainable_params = []
     backward_ts = []
+    del summary['last_backward_tick']
     for key in summary:
-        trainable_params.append(summary[key]['size'] * 4)
+        trainable_params.append(summary[key]['size'])
         backward_ts.append(summary[key]['backward_tick'])
         pass
         
@@ -89,6 +92,7 @@ def summary_string(model, input_size, batch_size=-1, device=torch.device('cuda:0
     backward_ts = [x / sum_ts for x in backward_ts]
     summary_str = ''
     BUCKET_CAP = 25 * 1024 * 1024
+    BUCKET_CAP_INIT = 1024 * 1024
     bucket_size = 0
     time = 0
     delayed = []
@@ -97,13 +101,16 @@ def summary_string(model, input_size, batch_size=-1, device=torch.device('cuda:0
         backward_ts = []
         for key in summary:
             size = summary[key]['size']
+            bucket_size += size
             time += summary[key]['backward_tick']
-            if size >= BUCKET_CAP:                
+            if bucket_size >= (BUCKET_CAP if len(trainable_params) > 0 else BUCKET_CAP_INIT):
                 backward_ts.append(time)
-                trainable_params.append(size)
-                size = 0
+                trainable_params.append(bucket_size)
+                bucket_size = 0
                 pass
             pass
+        backward_ts.append(time)
+        trainable_params.append(bucket_size)
         pass
-            
+    #print(trainable_params)
     return summary_str, list(reversed(trainable_params)), list(reversed(backward_ts))
