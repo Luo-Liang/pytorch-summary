@@ -15,10 +15,7 @@ def summary(model, input_size, batch_size=-1, device=torch.device('cuda:0'), dty
     return params_info
 
 
-def summary_string(model, input_size, batch_size=-1, device=torch.device('cuda:0'), dtypes=None, bucketize=False):
-    if dtypes == None:
-        dtypes = [torch.FloatTensor]*len(input_size)
-
+def summary_string(model, input_size, batch_size=-1, device=torch.device('cuda:0'), iter=1000, x=None, dtypes=None, bucketize=False):
     summary_str = ''
     monitored = []
     for param in model.parameters():
@@ -49,11 +46,16 @@ def summary_string(model, input_size, batch_size=-1, device=torch.device('cuda:0
     # multiple inputs to the network
     if isinstance(input_size, tuple):
         input_size = [input_size]
-
-    # batch_size of 2 for batchnorm
-    x = [torch.rand(2, *in_size).type(dtype).to(device=device)
-         for in_size, dtype in zip(input_size, dtypes)]
-
+    if x is None:
+        print("vision model detected?")
+        if dtypes == None:
+            dtypes = [torch.FloatTensor]*len(input_size)
+        # batch_size of 2 for batchnorm
+        x = [torch.rand(2, *in_size).type(dtype).to(device=device)
+             for in_size, dtype in zip(input_size, dtypes)]
+        double_asterisk = False
+    else:
+        double_asterisk = True
     # create properties
     summary = OrderedDict()
     hooks = []
@@ -66,12 +68,16 @@ def summary_string(model, input_size, batch_size=-1, device=torch.device('cuda:0
 
     # make a forward pass
     # print(x.shape)
-    output = model(*x)
-    #make a few backward pass too
-    loss = (1-output.mean())
-    for _ in range(1000):
+    if double_asterisk is False:
+        output = model(*x)
+        loss = (1-output.mean())        
+    else:
+        output = model(**x)
+        loss  = output["loss"] if isinstance(output, dict) else output[0]
+    
+    for _ in range(iter):
         summary['last_backward_tick'] = datetime.datetime.now().timestamp()
-        loss.backward(retain_graph=True)
+        loss.backward(loss, retain_graph=True)
         pass
     #print(hooks)
     # remove these hooks
