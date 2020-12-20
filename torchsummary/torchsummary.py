@@ -178,6 +178,13 @@ def summary_string_huggingface(model, x=None, device=torch.device('cuda:0'), ite
         with Timer(fw_times, device) as timer:
             output = model(**x)
     fw = np.mean(fw_times)
+
+    bw_times = []
+    for _ in range(iter):
+        with Timer(bw_times, device) as timer:
+            loss.backward(loss, retain_graph=True)
+
+    bw = np.mean(bw_times)
    
     for p in monitored:
         register_hook(p)
@@ -196,12 +203,7 @@ def summary_string_huggingface(model, x=None, device=torch.device('cuda:0'), ite
         h.remove()
         pass
     
-    bw_times = []
-    for _ in range(iter):
-        with Timer(bw_times, device) as timer:
-            loss.backward(loss, retain_graph=True)
 
-    bw = np.mean(bw_times)
 
     #reverse
     trainable_params = []
