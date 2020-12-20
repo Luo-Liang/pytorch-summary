@@ -5,6 +5,7 @@ from torch.autograd import Variable
 import datetime
 from collections import OrderedDict
 import numpy as np
+import time
 
 
 class Timer:
