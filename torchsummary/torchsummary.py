@@ -179,6 +179,8 @@ def summary_string_huggingface(model, x=None, device=torch.device('cuda:0'), ite
             output = model(**x)
     fw = np.mean(fw_times)
 
+    loss  = output["loss"] if isinstance(output, dict) else output[0]
+
     bw_times = []
     for _ in range(iter):
         with Timer(bw_times, device) as timer:
@@ -191,7 +193,6 @@ def summary_string_huggingface(model, x=None, device=torch.device('cuda:0'), ite
         pass
     
 
-    loss  = output["loss"] if isinstance(output, dict) else output[0]
     
     for _ in range(iter):
         summary['last_backward_tick'] = datetime.datetime.now().timestamp()
