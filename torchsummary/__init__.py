@@ -1,1 +1,1 @@
-from .torchsummary import summary, summary_string
+from .torchsummary import summary, summary_string,summary_string_huggingface
