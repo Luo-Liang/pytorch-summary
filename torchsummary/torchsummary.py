@@ -174,19 +174,27 @@ def summary_string_huggingface(model, x=None, device=torch.device('cuda:0'), ite
     # register hook
     #model.apply(register_hook)
     fw_times = []
-    for _ in range(iter):
-        with Timer(fw_times, device) as timer:
-            output = model(**x)
-    fw = np.mean(fw_times[10:])
+    for _ in range(5):
+        output = model(**x)
+        #warmup
+
+    with Timer(fw_times, device) as timer:
+        for _ in range(iter):
+                output = model(**x)
+    fw = np.mean(fw_times)
 
     loss  = output["loss"] if isinstance(output, dict) else output[0]
 
-    bw_times = []
+
     for _ in range(iter):
-        with Timer(bw_times, device) as timer:
+        loss.backward(loss, retain_graph=True)
+
+    bw_times = []
+    with Timer(bw_times, device) as timer:
+        for _ in range(iter):
             loss.backward(loss, retain_graph=True)
 
-    bw = np.mean(bw_times[10:])
+    bw = np.mean(bw_times)
    
     for p in monitored:
         register_hook(p)
