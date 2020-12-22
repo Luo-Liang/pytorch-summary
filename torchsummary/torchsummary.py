@@ -53,7 +53,7 @@ def summary_string(model, input_size, batch_size=-1, device=torch.device('cuda:0
                 summary[t]['backward_tick'] = 0
                 pass
             summary[t]['backward_tick'] += current
-            summary[t]['size'] = torch.prod(torch.LongTensor(list(t.size()))).item() * 4
+            summary[t]['size'] = torch.prod(torch.LongTensor(list(t.size()))).item() * (8 if t.dtype == torch.long else 4)
             summary['last_backward_tick'] = datetime.datetime.now().timestamp()
             #print("activating")
             return grad
@@ -160,7 +160,7 @@ def summary_string_huggingface(model, x=None, device=torch.device('cuda:0'), ite
                 summary[t]['backward_tick'] = 0
                 pass
             summary[t]['backward_tick'] += current
-            summary[t]['size'] = torch.prod(torch.LongTensor(list(t.size()))).item() * 4
+            summary[t]['size'] = torch.prod(torch.LongTensor(list(t.size()))).item() * (8 if t.dtype == torch.long else 4)
             summary['last_backward_tick'] = datetime.datetime.now().timestamp()
             #print("activating")
             return grad
