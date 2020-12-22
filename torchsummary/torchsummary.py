@@ -19,7 +19,7 @@ class Timer:
 
     def __exit__(self, *args):
         # _smart_print("[%d] synchronizing..." % dist.get_rank())
-        torch.cuda.synchronize(self.device)
+        torch.cuda.synchronize()
         # _smart_print("[%d] synchronized." % dist.get_rank())
         self.end = time.perf_counter()
         self.interval = self.end - self.start
@@ -184,7 +184,8 @@ def summary_string_huggingface(model, x=None, device=torch.device('cuda:0'), ite
 
     with Timer(fw_times, device) as timer:
         for _ in range(iter):
-                output = model(**x)
+            output = model(**x)
+
     fw = np.mean(fw_times)/iter
 
     loss  = output["loss"] if isinstance(output, dict) else output[0]
