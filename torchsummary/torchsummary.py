@@ -157,6 +157,10 @@ def summary_string(model, input_size, batch_size=-1, device=torch.device('cuda:0
     return summary_str, list(reversed(trainable_params)), list(reversed(backward_ts))
 
 def summary_string_huggingface(model, x, optimizer, max_grad_norm, device=torch.device('cuda:0'), iter=100, bucketize=False):
+
+    for key in x:
+        x[key].requires_grad = False
+    
     summary_str = ''
     monitored = []
     for param in model.parameters():
@@ -192,22 +196,27 @@ def summary_string_huggingface(model, x, optimizer, max_grad_norm, device=torch.
     # register hook
     #model.apply(register_hook)
     fw_times = []
+
     for _ in range(5):
         output = model(**x)
+        optimizer.step()
+        model.zero_grad()
+        optimizer.zero_grad()        
         #warmup
 
     loss  = output["loss"] if isinstance(output, dict) else output[0]
-        
-    for _ in range(iter):
-        loss.backward(loss, retain_graph=True)
+    loss_detached = loss.detach()
+    for _ in range(5):
+        loss.backward(loss_detached, retain_graph=True)
 
-        
     with Timer(fw_times, device) as timer:
         for _ in range(iter):
-            output = model(**x)
+            model(**x)
+            torch.nn.utils.clip_grad_norm_(model.parameters(),max_grad_norm)
             optimizer.step()
             model.zero_grad()
-            torch.nn.utils.clip_grad_norm_(model.parameters(),max_grad_norm)
+            optimizer.zero_grad()
+            #output = output.detach()
 
     fw = np.mean(fw_times)/iter
 
@@ -219,12 +228,12 @@ def summary_string_huggingface(model, x, optimizer, max_grad_norm, device=torch.
 
 
     for _ in range(iter):
-        loss.backward(loss, retain_graph=True)
+        loss.backward(loss_detached, retain_graph=True)
 
     bw_times = []
     with Timer(bw_times, device) as timer:
         for _ in range(iter):
-            loss.backward(loss, retain_graph=True)
+            loss.backward(loss_detached, retain_graph=True)
 
     bw = np.mean(bw_times)/iter
 
