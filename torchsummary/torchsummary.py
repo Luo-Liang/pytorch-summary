@@ -196,6 +196,12 @@ def summary_string_huggingface(model, x, optimizer, max_grad_norm, device=torch.
         output = model(**x)
         #warmup
 
+    loss  = output["loss"] if isinstance(output, dict) else output[0]
+        
+    for _ in range(iter):
+        loss.backward(loss, retain_graph=True)
+
+        
     with Timer(fw_times, device) as timer:
         for _ in range(iter):
             output = model(**x)
