@@ -142,7 +142,7 @@ def summary_string(model, input_size, batch_size=-1, device=torch.device('cuda:0
     backward_ts = [x / sum_ts for x in backward_ts]
     return summary_str, list(reversed(trainable_params)), list(reversed(backward_ts))
 
-def summary_string_huggingface(model, x=None, device=torch.device('cuda:0'), iter=100, bucketize=False):
+def summary_string_huggingface(model, x, optimizer, device=torch.device('cuda:0'), iter=100, bucketize=False):
     summary_str = ''
     monitored = []
     for param in model.parameters():
@@ -185,6 +185,7 @@ def summary_string_huggingface(model, x=None, device=torch.device('cuda:0'), ite
     with Timer(fw_times, device) as timer:
         for _ in range(iter):
             output = model(**x)
+            optimizer.step()
 
     fw = np.mean(fw_times)/iter
 
