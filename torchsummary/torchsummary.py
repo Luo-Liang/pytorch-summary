@@ -187,7 +187,7 @@ def summary_string_huggingface(model, x, optimizer, max_grad_norm, device=torch.
             output = model(**x)
             optimizer.step()
             model.zero_grad()
-            torch.nn.utils.clip_grad_norm_(model.parameters(),self.args.max_grad_norm)
+            torch.nn.utils.clip_grad_norm_(model.parameters(),max_grad_norm)
 
     fw = np.mean(fw_times)/iter
 
