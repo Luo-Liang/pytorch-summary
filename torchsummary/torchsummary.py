@@ -6,6 +6,20 @@ import datetime
 from collections import OrderedDict
 import numpy as np
 import time
+import os
+
+if 'INSTRUMENT_NO_BACKWARD_TS' in os.environ:
+    NO_BACKWARD_TS=True
+else:
+    NO_BACKWARD_TS=False
+
+if 'INSTRUMENT_NO_BACKWARD' in os.environ:
+    NO_BACKWARD=True
+else:
+    NO_BACKWARD=False
+
+
+
 
 
 class Timer:
@@ -191,6 +205,10 @@ def summary_string_huggingface(model, x, optimizer, max_grad_norm, device=torch.
 
     fw = np.mean(fw_times)/iter
 
+    if NO_BACKWARD is True:
+        print(f"backward is disabled to save memory. data is false.")
+        return fw, None, None, None    
+
     loss  = output["loss"] if isinstance(output, dict) else output[0]
 
 
@@ -203,6 +221,10 @@ def summary_string_huggingface(model, x, optimizer, max_grad_norm, device=torch.
             loss.backward(loss, retain_graph=True)
 
     bw = np.mean(bw_times)/iter
+
+    if NO_BACKWARD_TS is True:
+        print(f"backward ts is disabled to save memory. data is false.")
+        return fw, bw, None, None
    
     for p in monitored:
         register_hook(p)
