@@ -201,7 +201,6 @@ def summary_string_huggingface(model, x, optimizer, max_grad_norm, device=torch.
         output = model(**x)
         optimizer.step()
         model.zero_grad()
-        optimizer.zero_grad()        
         #warmup
 
     loss  = output["loss"] if isinstance(output, dict) else output[0]
@@ -215,7 +214,6 @@ def summary_string_huggingface(model, x, optimizer, max_grad_norm, device=torch.
             torch.nn.utils.clip_grad_norm_(model.parameters(),max_grad_norm)
             optimizer.step()
             model.zero_grad()
-            optimizer.zero_grad()
             #output = output.detach()
 
     fw = np.mean(fw_times)/iter
